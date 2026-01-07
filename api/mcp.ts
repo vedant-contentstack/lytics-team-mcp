@@ -1,12 +1,13 @@
 /**
  * Vercel Serverless Function for MCP using Streamable HTTP Transport
  *
- * This endpoint uses WebStandardStreamableHTTPServerTransport which works
- * properly with Vercel's serverless architecture - no SSE session state issues.
+ * This endpoint uses StreamableHTTPServerTransport which works
+ * with Vercel's Node.js serverless functions.
  */
 
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { z } from "zod";
 
 import { SupabaseDB } from "../src/db/supabase.js";
@@ -23,7 +24,7 @@ import {
   updateVisibility,
 } from "../src/tools/retrieve.js";
 
-// Initialize services (these are reused across invocations in Vercel)
+// Initialize services (these are reused across warm invocations)
 const db = new SupabaseDB(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_KEY!
@@ -31,7 +32,7 @@ const db = new SupabaseDB(
 const embeddings = new EmbeddingService(process.env.HUGGINGFACE_API_KEY!);
 
 // Store transports by session ID for stateful mode
-const transports = new Map<string, WebStandardStreamableHTTPServerTransport>();
+const transports = new Map<string, StreamableHTTPServerTransport>();
 
 function createMcpServer(teamId: string, userId: string): McpServer {
   const server = new McpServer({
@@ -397,73 +398,58 @@ function createMcpServer(teamId: string, userId: string): McpServer {
   return server;
 }
 
-// Vercel Edge Function handler
-export default async function handler(request: Request): Promise<Response> {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // CORS headers
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, mcp-session-id, X-Team-ID, X-User-ID"
+  );
+  res.setHeader("Access-Control-Expose-Headers", "mcp-session-id");
+
   // Handle CORS preflight
-  if (request.method === "OPTIONS") {
-    return new Response(null, {
-      status: 204,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-        "Access-Control-Allow-Headers":
-          "Content-Type, mcp-session-id, X-Team-ID, X-User-ID",
-      },
-    });
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
   }
 
   // Extract team/user from query params or headers
-  const url = new URL(request.url);
   const teamId =
-    request.headers.get("x-team-id") ||
-    url.searchParams.get("team_id") ||
+    (req.headers["x-team-id"] as string) ||
+    (req.query.team_id as string) ||
     "default";
   const userId =
-    request.headers.get("x-user-id") ||
-    url.searchParams.get("user_id") ||
+    (req.headers["x-user-id"] as string) ||
+    (req.query.user_id as string) ||
     "anonymous";
 
-  // Get or create session ID
-  const sessionId = request.headers.get("mcp-session-id");
+  // Get session ID from header
+  const sessionId = req.headers["mcp-session-id"] as string | undefined;
 
-  // For existing sessions, reuse the transport
+  // For existing sessions, try to reuse transport (works within same warm instance)
   let transport = sessionId ? transports.get(sessionId) : undefined;
 
   if (!transport) {
-    // Create new transport in stateless mode for serverless compatibility
-    // Each request is self-contained
-    transport = new WebStandardStreamableHTTPServerTransport({
+    // Create new transport in stateless mode for better serverless compatibility
+    transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: () => crypto.randomUUID(),
-      enableJsonResponse: true, // Use JSON responses instead of SSE where possible
     });
 
     // Create and connect the MCP server
     const server = createMcpServer(teamId, userId);
     await server.connect(transport);
 
-    // Store transport for session reuse (within same serverless instance)
-    transport.onsessioninitialized = (newSessionId: string) => {
-      transports.set(newSessionId, transport!);
-    };
+    // Store for potential reuse within same warm instance
+    if (transport.sessionId) {
+      transports.set(transport.sessionId, transport);
+    }
   }
 
-  // Handle the request
-  const response = await transport.handleRequest(request);
-
-  // Add CORS headers to response
-  const corsHeaders = new Headers(response.headers);
-  corsHeaders.set("Access-Control-Allow-Origin", "*");
-  corsHeaders.set("Access-Control-Expose-Headers", "mcp-session-id");
-
-  return new Response(response.body, {
-    status: response.status,
-    statusText: response.statusText,
-    headers: corsHeaders,
-  });
+  // Handle the request using the transport
+  await transport.handleRequest(req, res, req.body);
 }
 
-// Vercel config for Edge Runtime
+// Vercel config for Node.js runtime with extended timeout
 export const config = {
-  runtime: "edge",
+  maxDuration: 60,
 };
-

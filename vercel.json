@@ -6,6 +6,9 @@
   "functions": {
     "api/sse.ts": {
       "maxDuration": 60
+    },
+    "api/mcp.ts": {
+      "maxDuration": 60
     }
   },
   "headers": [
