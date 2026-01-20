@@ -33,15 +33,29 @@ const server = new McpServer({
   version: "1.0.0",
 });
 
+// Get workspace path from environment or current directory
+const workspacePath = process.env.WORKSPACE_PATH || process.cwd();
+
 // Register tools using the new API
 server.registerTool(
   "save_conversation",
   {
     description:
-      "Save the current conversation to your team's knowledge base. Use this to preserve valuable discussions about bugs, code explanations, solutions, or any insights worth sharing with your team.",
+      "Save the current conversation to your team's knowledge base. IMPORTANT: This tool will automatically search for exported conversation .md files in the workspace to ensure complete content with code blocks is saved. You can also provide a file_path to an exported conversation file. Always include the FULL conversation content with ALL code blocks, examples, and formatting if passing content directly.",
     inputSchema: {
       title: z.string().describe("A descriptive title for the conversation"),
-      content: z.string().describe("The full conversation content to save"),
+      content: z
+        .string()
+        .optional()
+        .describe(
+          "The full conversation content to save, including ALL code blocks, examples, and formatting. If omitted, auto-detection will be used."
+        ),
+      file_path: z
+        .string()
+        .optional()
+        .describe(
+          "Optional: Path to an exported conversation markdown file. If provided, content will be read from this file instead."
+        ),
       is_public: z
         .boolean()
         .default(true)
@@ -66,6 +80,12 @@ server.registerTool(
         .boolean()
         .default(true)
         .describe("Whether to auto-generate a summary using AI"),
+      auto_find_export: z
+        .boolean()
+        .default(true)
+        .describe(
+          "Automatically search for exported conversation .md files in the workspace (enabled by default)"
+        ),
     },
   },
   async (args) => {
@@ -74,22 +94,28 @@ server.registerTool(
       db,
       embeddings,
       config.teamId,
-      config.userId
+      config.userId,
+      workspacePath
     );
+    
+    const response: any = {
+      success: true,
+      message: "Conversation saved successfully!",
+      id: result.id,
+      summary: result.summary,
+      source: result.source,
+    };
+
+    if (result.warnings && result.warnings.length > 0) {
+      response.warnings = result.warnings;
+      response.message += " ⚠️ However, there are some warnings about the content quality.";
+    }
+
     return {
       content: [
         {
           type: "text" as const,
-          text: JSON.stringify(
-            {
-              success: true,
-              message: "Conversation saved successfully!",
-              id: result.id,
-              summary: result.summary,
-            },
-            null,
-            2
-          ),
+          text: JSON.stringify(response, null, 2),
         },
       ],
     };

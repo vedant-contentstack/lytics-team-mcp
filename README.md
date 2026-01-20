@@ -94,12 +94,20 @@ Once configured, you can use these tools in Cursor:
 
 ### `save_conversation`
 
-Save the current chat to your team's knowledge base.
+Save the current chat to your team's knowledge base with **automatic content detection**.
+
+**🎯 Smart Features:**
+- **Auto-Detection**: Automatically finds and uses exported conversation markdown files
+- **Content Validation**: Warns if code blocks or important content is missing
+- **Manual Override**: Can specify `file_path` to use a specific exported file
 
 ```
 "Save this conversation about fixing the auth bug"
-→ Cursor will use save_conversation with title, content, tags
+→ Cursor will automatically find the exported .md file with complete content
+→ Falls back to provided content if no export found
 ```
+
+**Pro Tip**: For conversations with lots of code, Cursor's export might miss code blocks. The MCP automatically detects exported `.md` files in your workspace (like `cursor_conversation_export.md`) and uses them instead to ensure nothing is lost!
 
 ### `search_knowledge`
 
@@ -168,6 +176,12 @@ After solving a tricky bug:
 
 > "Save this conversation as 'Fixed infinite loop in useEffect with proper deps' with tags: react, hooks, bug-fix"
 
+The MCP will:
+1. Look for exported conversation `.md` files in your workspace
+2. Use the most recent one that matches (ensuring code blocks are preserved)
+3. Fall back to Cursor's provided content if no export found
+4. Warn you if content seems incomplete
+
 ### Checking Existing Knowledge
 
 Before diving into a new problem:
@@ -179,6 +193,40 @@ Before diving into a new problem:
 While debugging:
 
 > "Find if anyone on the team has discussed this error: 'Cannot read property of undefined'"
+
+## 🔧 Ensuring Complete Conversation Saves
+
+### The Problem
+Sometimes when Cursor saves a conversation, it might omit code blocks or truncate content. This means valuable implementation details could be lost!
+
+### The Solution ✨
+Lytics MCP has **automatic content detection** built-in:
+
+**1. Auto-Detection (Recommended)**
+```
+1. Export your conversation from Cursor (creates cursor_*.md file)
+2. Tell Cursor: "Save this conversation"
+3. MCP automatically finds and uses the exported file
+4. All code blocks and content preserved! ✅
+```
+
+**2. Manual File Path**
+```
+"Save conversation from file cursor_my_conversation.md with title 'Profile Creation Deep Dive'"
+→ MCP reads directly from the specified file
+```
+
+**3. Direct Content (Fallback)**
+```
+If no export file is found, uses content provided by Cursor
+→ Shows warnings if content appears incomplete
+```
+
+### Best Practice
+For important conversations with lots of code:
+1. Export the conversation (Cmd/Ctrl + Shift + E or via menu)
+2. Immediately save it to your knowledge base
+3. The MCP will automatically use the exported file with complete content!
 
 ## 🏢 Team Setup
 
