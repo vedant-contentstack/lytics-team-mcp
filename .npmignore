@@ -20,9 +20,7 @@ npm-debug.log*
 .gitignore
 .github/
 
-# Vercel deployment (not needed for npm package)
-api/
-vercel.json
+# Vercel artifacts (if any remain)
 .vercel/
 
 # Documentation that's not needed in package
