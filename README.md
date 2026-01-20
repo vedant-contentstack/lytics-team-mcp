@@ -214,6 +214,15 @@ Remove a conversation you created.
 "Delete my conversation abc-123"
 ```
 
+### `get_user_id`
+
+Get your unique User ID to share with teammates or use on another machine.
+
+```
+"What is my user ID?"
+"Show me my user ID"
+```
+
 ## 💡 Usage Examples
 
 ### Saving a Valuable Discussion

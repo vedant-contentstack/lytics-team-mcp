@@ -401,6 +401,35 @@ server.registerTool(
   }
 );
 
+server.registerTool(
+  "get_user_id",
+  {
+    description:
+      "Get your unique User ID. Use this to share your identity with teammates or access your conversations from another machine.",
+    inputSchema: {},
+  },
+  async () => {
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: JSON.stringify(
+            {
+              user_id: config.userId,
+              team_id: config.teamId,
+              message: "This is your unique identifier. Share it with teammates to let them find your public conversations.",
+              storage_location: "~/.lytics-mcp/user-id.txt",
+              tip: "To use this ID on another machine, copy it to ~/.lytics-mcp/user-id.txt on that machine.",
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
+);
+
 // Start the server
 async function main() {
   const transport = new StdioServerTransport();
