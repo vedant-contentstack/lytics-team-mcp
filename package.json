@@ -1,5 +1,5 @@
 {
-  "name": "lytics-mcp",
+  "name": "@vedant-contentstack/lytics-mcp",
   "version": "1.0.0",
   "description": "Team knowledge base MCP server for Cursor - store and search AI conversations across your team",
   "type": "module",
@@ -7,11 +7,18 @@
   "bin": {
     "lytics-mcp": "./dist/index.js"
   },
+  "files": [
+    "dist/",
+    "supabase/migrations/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch",
     "start": "node dist/index.js",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
@@ -19,9 +26,21 @@
     "ai",
     "knowledge-base",
     "team-collaboration",
-    "vector-search"
+    "vector-search",
+    "model-context-protocol",
+    "cursor-ide",
+    "embeddings",
+    "semantic-search"
   ],
-  "author": "",
+  "author": "Vedant Karle",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vedant-contentstack/lytics-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/vedant-contentstack/lytics-mcp/issues"
+  },
+  "homepage": "https://github.com/vedant-contentstack/lytics-mcp#readme",
   "license": "MIT",
   "dependencies": {
     "@huggingface/inference": "^3.0.0",

@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "lytics": {
+      "command": "node",
+      "args": ["/Users/vedant.karle/Documents/GitHub/lytics-mcp/dist/index.js"],
+      "env": {
+        "SUPABASE_URL": "your-supabase-url",
+        "SUPABASE_SERVICE_KEY": "your-supabase-service-key",
+        "HUGGINGFACE_API_KEY": "your-huggingface-api-key",
+        "TEAM_ID": "my-team",
+        "USER_ID": "vedant"
+      }
+    }
+  }
+}

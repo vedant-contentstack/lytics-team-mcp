@@ -1,0 +1,44 @@
+# Source files (we ship the built dist/ only)
+src/
+tsconfig.json
+
+# Tests
+*.test.ts
+*.spec.ts
+test/
+tests/
+
+# Development files
+.env
+.env.*
+*.log
+npm-debug.log*
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Vercel deployment (not needed for npm package)
+api/
+vercel.json
+.vercel/
+
+# Documentation that's not needed in package
+DEPLOYMENT.md
+mcp-config-local.json
+saved-conversations/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.cursor/
+
+# Node modules
+node_modules/
+
+# Build artifacts we don't need
+dist/**/*.map

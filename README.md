@@ -15,49 +15,126 @@ Lytics is a Model Context Protocol (MCP) server that stores and searches AI conv
 
 ## 🚀 Quick Start
 
-### 1. Set Up Supabase
+### 1. Install via npm
+
+```bash
+# Install globally
+npm install -g @vedant-contentstack/lytics-mcp
+
+# Or install locally in your project
+npm install @vedant-contentstack/lytics-mcp
+```
+
+### 2. Set Up Supabase (One-time setup)
 
 1. Create a free account at [supabase.com](https://supabase.com)
 2. Create a new project
-3. Go to **SQL Editor** and run the migration:
+3. Go to **SQL Editor** and run this migration:
 
 ```sql
--- Copy contents from supabase/migrations/001_initial_schema.sql
+-- Enable pgvector extension
+create extension if not exists vector;
+
+-- Create conversations table
+create table conversations (
+  id uuid primary key default gen_random_uuid(),
+  user_id text not null,
+  team_id text not null,
+  title text not null,
+  summary text,
+  content text not null,
+  embedding vector(384),
+  is_public boolean default true,
+  tags text[] default '{}',
+  repo_context text,
+  file_context text[] default '{}',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- Create indexes
+create index idx_conversations_team on conversations(team_id);
+create index idx_conversations_user on conversations(user_id);
+create index idx_conversations_embedding on conversations using hnsw (embedding vector_cosine_ops);
+
+-- Create search function
+create or replace function search_conversations(
+  query_embedding vector(384),
+  team_id_filter text,
+  user_id_filter text,
+  include_private boolean default false,
+  match_limit int default 5,
+  similarity_threshold float default 0.5
+)
+returns table (
+  id uuid,
+  title text,
+  summary text,
+  user_id text,
+  tags text[],
+  similarity float,
+  created_at timestamptz,
+  repo_context text
+)
+language plpgsql as $$
+begin
+  return query
+  select c.id, c.title, c.summary, c.user_id, c.tags,
+    (1 - (c.embedding <=> query_embedding))::float as similarity,
+    c.created_at, c.repo_context
+  from conversations c
+  where c.team_id = team_id_filter
+    and (c.is_public = true or (include_private and c.user_id = user_id_filter))
+    and c.embedding is not null
+    and (1 - (c.embedding <=> query_embedding)) > similarity_threshold
+  order by c.embedding <=> query_embedding
+  limit match_limit;
+end;
+$$;
 ```
 
 4. Get your credentials from **Settings → API**:
    - Project URL → `SUPABASE_URL`
    - Service Role Key → `SUPABASE_SERVICE_KEY`
 
-### 2. Get Hugging Face API Token (Free!)
+### 3. Get Hugging Face API Token (Free!)
 
 1. Create a free account at [huggingface.co](https://huggingface.co)
 2. Go to **Settings → Access Tokens**
 3. Create a new token with `read` access
 
-### 3. Install the MCP Server
-
-```bash
-# Clone and build
-git clone https://github.com/your-org/lytics-mcp.git
-cd lytics-mcp
-npm install
-npm run build
-```
-
 ### 4. Configure Cursor
 
 Add Lytics to your Cursor MCP configuration:
 
-**For macOS/Linux:** `~/.cursor/mcp.json`
+**For macOS/Linux:** `~/.cursor/mcp.json`  
 **For Windows:** `%APPDATA%\Cursor\mcp.json`
 
 ```json
 {
   "mcpServers": {
     "lytics": {
-      "command": "node",
-      "args": ["/absolute/path/to/lytics-mcp/dist/index.js"],
+      "command": "npx",
+      "args": ["-y", "@vedant-contentstack/lytics-mcp"],
+      "env": {
+        "SUPABASE_URL": "https://your-project.supabase.co",
+        "SUPABASE_SERVICE_KEY": "your-service-role-key",
+        "HUGGINGFACE_API_KEY": "hf_your-token-here",
+        "TEAM_ID": "your-team-name",
+        "USER_ID": "your-username"
+      }
+    }
+  }
+}
+```
+
+**Alternative (if installed globally):**
+
+```json
+{
+  "mcpServers": {
+    "lytics": {
+      "command": "lytics-mcp",
       "env": {
         "SUPABASE_URL": "https://your-project.supabase.co",
         "SUPABASE_SERVICE_KEY": "your-service-role-key",
