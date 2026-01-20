@@ -120,8 +120,7 @@ Add Lytics to your Cursor MCP configuration:
         "SUPABASE_URL": "https://your-project.supabase.co",
         "SUPABASE_SERVICE_KEY": "your-service-role-key",
         "HUGGINGFACE_API_KEY": "hf_your-token-here",
-        "TEAM_ID": "your-team-name",
-        "USER_ID": "your-username"
+        "TEAM_ID": "your-team-name"
       }
     }
   }
@@ -139,13 +138,14 @@ Add Lytics to your Cursor MCP configuration:
         "SUPABASE_URL": "https://your-project.supabase.co",
         "SUPABASE_SERVICE_KEY": "your-service-role-key",
         "HUGGINGFACE_API_KEY": "hf_your-token-here",
-        "TEAM_ID": "your-team-name",
-        "USER_ID": "your-username"
+        "TEAM_ID": "your-team-name"
       }
     }
   }
 }
 ```
+
+**Note:** Your User ID is auto-generated on first run and stored in `~/.lytics-mcp/user-id.txt`. You'll see it displayed when the server starts.
 
 ### 5. Restart Cursor
 
@@ -244,20 +244,45 @@ While debugging:
 
 ### Environment Variables
 
-| Variable               | Description                           |
-| ---------------------- | ------------------------------------- |
-| `SUPABASE_URL`         | Your Supabase project URL             |
-| `SUPABASE_SERVICE_KEY` | Service role key (keep secret!)       |
-| `HUGGINGFACE_API_KEY`  | Free token for embeddings & summaries |
-| `TEAM_ID`              | Shared team identifier                |
-| `USER_ID`              | Individual user identifier            |
+| Variable               | Required? | Description                           |
+| ---------------------- | --------- | ------------------------------------- |
+| `SUPABASE_URL`         | ✅ Yes | Your Supabase project URL             |
+| `SUPABASE_SERVICE_KEY` | ✅ Yes | Service role key (keep secret!)       |
+| `HUGGINGFACE_API_KEY`  | ✅ Yes | Free token for embeddings & summaries |
+| `TEAM_ID`              | ✅ Yes | Shared team identifier                |
+
+**User ID:** 🎉 **Auto-generated!** No need to set it manually.
+
+On first run, a unique User ID is generated and stored in `~/.lytics-mcp/user-id.txt`. This ID:
+- ✅ Identifies your conversations
+- ✅ Can be shared to fetch your private conversations
+- ✅ Persists across Cursor restarts
+- ✅ Can be copied to another machine if needed
 
 ### Recommended Team IDs
 
 Use consistent identifiers:
 
 - `TEAM_ID`: Your org/team name (e.g., `acme-frontend`, `startup-core`)
-- `USER_ID`: Email or username (e.g., `vedant`, `vedant@acme.com`)
+
+### Managing Your User ID
+
+**View your User ID:**
+```bash
+cat ~/.lytics-mcp/user-id.txt
+```
+
+**Use on another machine:**
+```bash
+# Copy the ID from your original machine
+echo "your-user-id-here" > ~/.lytics-mcp/user-id.txt
+```
+
+**Reset your User ID** (creates a new identity):
+```bash
+rm ~/.lytics-mcp/user-id.txt
+# Will generate new ID on next run
+```
 
 ## 🔐 Security Notes
 
