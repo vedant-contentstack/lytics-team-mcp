@@ -410,6 +410,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(204).end();
   }
 
+  // Handle GET requests (health checks, endpoint discovery)
+  if (req.method === "GET") {
+    return res.status(200).json({
+      name: "lytics-mcp",
+      version: "1.0.0",
+      description: "Team knowledge base MCP server",
+      transport: "streamable-http",
+      status: "ready",
+      endpoints: {
+        mcp: "/api/mcp",
+        health: "/api/health",
+      },
+      instructions: "Use POST requests with MCP JSON-RPC protocol",
+    });
+  }
+
+  // Only handle POST requests through MCP transport
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed. Use POST for MCP requests." });
+  }
+
   // Extract team/user from query params or headers
   const teamId =
     (req.headers["x-team-id"] as string) ||
