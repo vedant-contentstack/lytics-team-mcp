@@ -1,4 +1,4 @@
-# 🧠 Lytics MCP
+# 🧠 Lytics Team MCP
 
 **Team Knowledge Base for Cursor AI Conversations**
 
