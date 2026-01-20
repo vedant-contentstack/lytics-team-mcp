@@ -2,7 +2,7 @@
 
 **Team Knowledge Base for Cursor AI Conversations**
 
-Lytics is a Model Context Protocol (MCP) server that stores and searches AI conversations across your team. When someone tackles a problem, their conversation is saved and becomes searchable—so when a teammate faces a similar issue, they get instant access to relevant past discussions.
+Model Context Protocol (MCP) server that stores and searches AI conversations across your team. When someone tackles a problem, their conversation is saved and becomes searchable—so when a teammate faces a similar issue, they get instant access to relevant past discussions.
 
 ## ✨ Features
 
