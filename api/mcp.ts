@@ -441,6 +441,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     (req.query.user_id as string) ||
     "anonymous";
 
+  // Parse body if it's a string (Vercel sometimes pre-parses, sometimes doesn't)
+  let body = req.body;
+  if (typeof body === 'string') {
+    try {
+      body = JSON.parse(body);
+    } catch (e) {
+      return res.status(400).json({ error: "Invalid JSON body" });
+    }
+  }
+
   // ALWAYS create a fresh transport for each request (serverless-friendly)
   // This ensures each invocation is independent and doesn't rely on warm instance state
   const transport = new StreamableHTTPServerTransport({
@@ -452,7 +462,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   await server.connect(transport);
 
   // Handle the request using the transport
-  await transport.handleRequest(req, res, req.body);
+  await transport.handleRequest(req, res, body);
 }
 
 // Vercel config for Node.js runtime with extended timeout

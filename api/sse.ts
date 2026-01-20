@@ -189,11 +189,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Team-ID, X-User-ID");
-
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Team-ID, X-User-ID, Cache-Control");
+  
   if (req.method === "OPTIONS") {
     return res.status(204).end();
   }
+
+  // Set SSE headers
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
 
   // Get team/user from query params or headers
   const teamId = (req.headers["x-team-id"] as string) || (req.query.team_id as string) || "default";
@@ -206,6 +211,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const server = createMcpServer(teamId, userId);
 
   await server.connect(transport);
+  
+  // Keep connection alive
+  await transport.start();
 }
 
 // Vercel config for streaming
