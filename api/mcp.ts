@@ -31,9 +31,6 @@ const db = new SupabaseDB(
 );
 const embeddings = new EmbeddingService(process.env.HUGGINGFACE_API_KEY!);
 
-// Store transports by session ID for stateful mode
-const transports = new Map<string, StreamableHTTPServerTransport>();
-
 function createMcpServer(teamId: string, userId: string): McpServer {
   const server = new McpServer({
     name: "lytics-mcp",
@@ -423,27 +420,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     (req.query.user_id as string) ||
     "anonymous";
 
-  // Get session ID from header
-  const sessionId = req.headers["mcp-session-id"] as string | undefined;
+  // ALWAYS create a fresh transport for each request (serverless-friendly)
+  // This ensures each invocation is independent and doesn't rely on warm instance state
+  const transport = new StreamableHTTPServerTransport({
+    sessionIdGenerator: () => crypto.randomUUID(),
+  });
 
-  // For existing sessions, try to reuse transport (works within same warm instance)
-  let transport = sessionId ? transports.get(sessionId) : undefined;
-
-  if (!transport) {
-    // Create new transport in stateless mode for better serverless compatibility
-    transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: () => crypto.randomUUID(),
-    });
-
-    // Create and connect the MCP server
-    const server = createMcpServer(teamId, userId);
-    await server.connect(transport);
-
-    // Store for potential reuse within same warm instance
-    if (transport.sessionId) {
-      transports.set(transport.sessionId, transport);
-    }
-  }
+  // Create and connect a new MCP server for this request
+  const server = createMcpServer(teamId, userId);
+  await server.connect(transport);
 
   // Handle the request using the transport
   await transport.handleRequest(req, res, req.body);
