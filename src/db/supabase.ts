@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { gzipSync, gunzipSync } from "zlib";
 import type {
   Conversation,
   ConversationInsert,
@@ -13,9 +14,34 @@ export class SupabaseDB {
   }
 
   /**
+   * Compress content using gzip and encode as base64 for storage
+   */
+  private compressContent(content: string): string {
+    const compressed = gzipSync(Buffer.from(content, 'utf-8'));
+    return compressed.toString('base64');
+  }
+
+  /**
+   * Decompress content from base64 gzip
+   */
+  private decompressContent(compressed: string): string {
+    try {
+      const buffer = Buffer.from(compressed, 'base64');
+      const decompressed = gunzipSync(buffer);
+      return decompressed.toString('utf-8');
+    } catch (error) {
+      // If decompression fails, assume it's uncompressed legacy data
+      return compressed;
+    }
+  }
+
+  /**
    * Save a new conversation to the database
    */
   async saveConversation(conversation: ConversationInsert): Promise<string> {
+    // Compress the content to save storage space
+    const compressedContent = this.compressContent(conversation.content);
+    
     const { data, error } = await this.client
       .from("conversations")
       .insert({
@@ -23,7 +49,7 @@ export class SupabaseDB {
         team_id: conversation.team_id,
         title: conversation.title,
         summary: conversation.summary || null,
-        content: conversation.content,
+        content: compressedContent,
         embedding: conversation.embedding,
         is_public: conversation.is_public,
         tags: conversation.tags || [],
@@ -92,6 +118,11 @@ export class SupabaseDB {
       return null;
     }
 
+    // Decompress the content before returning
+    if (data.content) {
+      data.content = this.decompressContent(data.content);
+    }
+
     return data;
   }
 
@@ -137,6 +168,15 @@ export class SupabaseDB {
 
     if (error) {
       throw new Error(`Failed to list conversations: ${error.message}`);
+    }
+
+    // Decompress content for each conversation
+    if (data) {
+      data.forEach((conv) => {
+        if (conv.content) {
+          conv.content = this.decompressContent(conv.content);
+        }
+      });
     }
 
     return data || [];

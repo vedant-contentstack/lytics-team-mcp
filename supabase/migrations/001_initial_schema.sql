@@ -13,7 +13,7 @@ create table conversations (
   team_id text not null,
   title text not null,
   summary text,
-  content text not null,
+  content text not null, -- Stored as gzip-compressed base64-encoded text to reduce storage
   embedding vector(384),
   is_public boolean default true,
   tags text[] default '{}',

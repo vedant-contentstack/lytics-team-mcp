@@ -25,77 +25,12 @@ npm install -g lytics-team-mcp
 npm install lytics-team-mcp
 ```
 
-### 2. Set Up Supabase (One-time setup)
+### 2. Get Configuration from Your Team Lead
 
-1. Create a free account at [supabase.com](https://supabase.com)
-2. Create a new project
-3. Go to **SQL Editor** and run this migration:
-
-```sql
--- Enable pgvector extension
-create extension if not exists vector;
-
--- Create conversations table
-create table conversations (
-  id uuid primary key default gen_random_uuid(),
-  user_id text not null,
-  team_id text not null,
-  title text not null,
-  summary text,
-  content text not null,
-  embedding vector(384),
-  is_public boolean default true,
-  tags text[] default '{}',
-  repo_context text,
-  file_context text[] default '{}',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
--- Create indexes
-create index idx_conversations_team on conversations(team_id);
-create index idx_conversations_user on conversations(user_id);
-create index idx_conversations_embedding on conversations using hnsw (embedding vector_cosine_ops);
-
--- Create search function
-create or replace function search_conversations(
-  query_embedding vector(384),
-  team_id_filter text,
-  user_id_filter text,
-  include_private boolean default false,
-  match_limit int default 5,
-  similarity_threshold float default 0.5
-)
-returns table (
-  id uuid,
-  title text,
-  summary text,
-  user_id text,
-  tags text[],
-  similarity float,
-  created_at timestamptz,
-  repo_context text
-)
-language plpgsql as $$
-begin
-  return query
-  select c.id, c.title, c.summary, c.user_id, c.tags,
-    (1 - (c.embedding <=> query_embedding))::float as similarity,
-    c.created_at, c.repo_context
-  from conversations c
-  where c.team_id = team_id_filter
-    and (c.is_public = true or (include_private and c.user_id = user_id_filter))
-    and c.embedding is not null
-    and (1 - (c.embedding <=> query_embedding)) > similarity_threshold
-  order by c.embedding <=> query_embedding
-  limit match_limit;
-end;
-$$;
-```
-
-4. Get your credentials from **Settings → API**:
-   - Project URL → `SUPABASE_URL`
-   - Service Role Key → `SUPABASE_SERVICE_KEY`
+Your team lead will provide you with:
+- `SUPABASE_URL` - Shared team Supabase project URL
+- `SUPABASE_SERVICE_KEY` - Service role key (keep secret!)
+- `TEAM_ID` - Your team identifier
 
 ### 3. Get Hugging Face API Token (Free!)
 
@@ -150,6 +85,8 @@ Add Lytics to your Cursor MCP configuration:
 ### 5. Restart Cursor
 
 Restart Cursor to load the MCP server. You should now have access to Lytics tools!
+
+**First time setup?** On first run, Lytics will generate a unique User ID for you automatically.
 
 ## 🛠️ Available Tools
 
@@ -245,20 +182,44 @@ While debugging:
 
 ## 🏢 Team Setup
 
-### For Team Leads
+### For Team Leads (One-Time Setup)
 
-1. Create a shared Supabase project for your team
-2. Share the configuration (sans sensitive keys) with team members
-3. Each team member uses their own `USER_ID` but same `TEAM_ID`
+1. **Create a Supabase Project**
+   - Go to [supabase.com](https://supabase.com) and create a free account
+   - Create a new project for your team
+
+2. **Run Database Migration**
+   - Go to **SQL Editor** in Supabase
+   - Run the migration from `supabase/migrations/001_initial_schema.sql` in this repo
+   - This creates the conversations table with vector search capabilities
+
+3. **Get Credentials**
+   - Go to **Settings → API** in Supabase
+   - Copy your Project URL → `SUPABASE_URL`
+   - Copy your Service Role Key → `SUPABASE_SERVICE_KEY`
+
+4. **Share with Team**
+   - Provide team members with:
+     - `SUPABASE_URL`
+     - `SUPABASE_SERVICE_KEY` (securely!)
+     - `TEAM_ID` (choose a team identifier like `acme-frontend`)
+   - Each team member will auto-generate their own `USER_ID` on first run
+
+### For Team Members
+
+1. Get credentials from your team lead
+2. Get your own Hugging Face API token (free)
+3. Follow the Quick Start guide above to configure Cursor
 
 ### Environment Variables
 
-| Variable               | Required? | Description                           |
-| ---------------------- | --------- | ------------------------------------- |
-| `SUPABASE_URL`         | ✅ Yes | Your Supabase project URL             |
-| `SUPABASE_SERVICE_KEY` | ✅ Yes | Service role key (keep secret!)       |
-| `HUGGINGFACE_API_KEY`  | ✅ Yes | Free token for embeddings & summaries |
-| `TEAM_ID`              | ✅ Yes | Shared team identifier                |
+| Variable               | Required? | Source      | Description                           |
+| ---------------------- | --------- | ----------- | ------------------------------------- |
+| `SUPABASE_URL`         | ✅ Yes | Team Lead   | Shared Supabase project URL           |
+| `SUPABASE_SERVICE_KEY` | ✅ Yes | Team Lead   | Service role key (keep secret!)       |
+| `HUGGINGFACE_API_KEY`  | ✅ Yes | You (free)  | Your personal HF token for embeddings |
+| `TEAM_ID`              | ✅ Yes | Team Lead   | Shared team identifier                |
+| `USER_ID`              | Auto    | Auto-generated | Your unique ID (no need to set)    |
 
 **User ID:** 🎉 **Auto-generated!** No need to set it manually.
 
@@ -267,12 +228,6 @@ On first run, a unique User ID is generated and stored in `~/.lytics-mcp/user-id
 - ✅ Can be shared to fetch your private conversations
 - ✅ Persists across Cursor restarts
 - ✅ Can be copied to another machine if needed
-
-### Recommended Team IDs
-
-Use consistent identifiers:
-
-- `TEAM_ID`: Your org/team name (e.g., `acme-frontend`, `startup-core`)
 
 ### Managing Your User ID
 
@@ -304,7 +259,16 @@ rm ~/.lytics-mcp/user-id.txt
 
 - **Hugging Face**: 🆓 Free tier includes embeddings & summarization
 - **Supabase Free Tier**: 500MB database, plenty for thousands of conversations
+- **Storage Optimization**: Conversations are automatically compressed using gzip (70-90% reduction)
 - **Total**: $0 for small-medium teams!
+
+### Storage Details
+
+Lytics uses **automatic content compression** to minimize database storage:
+- Conversation content is compressed with gzip before saving
+- Reduces storage by 70-90% for text-heavy conversations
+- Transparent decompression when retrieving conversations
+- Backward compatible with uncompressed legacy data
 
 ## 🛠️ Development
 
@@ -319,7 +283,7 @@ npm run build
 npm run dev
 
 # Test the server locally
-SUPABASE_URL=... SUPABASE_SERVICE_KEY=... HUGGINGFACE_API_KEY=... TEAM_ID=test USER_ID=dev node dist/index.js
+SUPABASE_URL=... SUPABASE_SERVICE_KEY=... HUGGINGFACE_API_KEY=... TEAM_ID=test node dist/index.js
 ```
 
 ## 🤝 Contributing
