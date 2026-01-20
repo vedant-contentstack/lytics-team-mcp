@@ -19,10 +19,10 @@ Lytics is a Model Context Protocol (MCP) server that stores and searches AI conv
 
 ```bash
 # Install globally
-npm install -g @vedant-contentstack/lytics-mcp
+npm install -g lytics-team-mcp
 
 # Or install locally in your project
-npm install @vedant-contentstack/lytics-mcp
+npm install lytics-team-mcp
 ```
 
 ### 2. Set Up Supabase (One-time setup)
@@ -115,7 +115,7 @@ Add Lytics to your Cursor MCP configuration:
   "mcpServers": {
     "lytics": {
       "command": "npx",
-      "args": ["-y", "@vedant-contentstack/lytics-mcp"],
+      "args": ["-y", "lytics-team-mcp"],
       "env": {
         "SUPABASE_URL": "https://your-project.supabase.co",
         "SUPABASE_SERVICE_KEY": "your-service-role-key",
@@ -134,7 +134,7 @@ Add Lytics to your Cursor MCP configuration:
 {
   "mcpServers": {
     "lytics": {
-      "command": "lytics-mcp",
+      "command": "lytics-team-mcp",
       "env": {
         "SUPABASE_URL": "https://your-project.supabase.co",
         "SUPABASE_SERVICE_KEY": "your-service-role-key",

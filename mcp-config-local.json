@@ -1,8 +1,7 @@
 {
   "mcpServers": {
     "lytics": {
-      "command": "node",
-      "args": ["/Users/vedant.karle/Documents/GitHub/lytics-mcp/dist/index.js"],
+      "command": "lytics-team-mcp",
       "env": {
         "SUPABASE_URL": "your-supabase-url",
         "SUPABASE_SERVICE_KEY": "your-supabase-service-key",

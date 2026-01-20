@@ -1,11 +1,11 @@
 {
-  "name": "@vedant-contentstack/lytics-mcp",
+  "name": "lytics-team-mcp",
   "version": "1.0.0",
   "description": "Team knowledge base MCP server for Cursor - store and search AI conversations across your team",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "lytics-mcp": "./dist/index.js"
+    "lytics-team-mcp": "./dist/index.js"
   },
   "files": [
     "dist/",

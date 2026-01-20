@@ -33,37 +33,48 @@ npm version minor  # 1.0.0 → 1.1.0
 npm version major  # 1.0.0 → 2.0.0
 ```
 
-### 3. Publish to npm
+### 3. Check Name Availability
 
 ```bash
-# Publish (first time)
-npm publish --access public
+# Check if the name is available
+npm search lytics-team-mcp
+
+# Or try viewing it (should fail if not taken)
+npm view lytics-team-mcp
+```
+
+### 4. Publish to npm
+
+```bash
+# Publish (first time - unscoped packages are public by default)
+npm publish
 
 # For subsequent updates
 npm publish
 ```
 
-### 4. Verify Publication
+### 5. Verify Publication
 
 ```bash
 # Check it's live
-npm view @vedant-contentstack/lytics-mcp
+npm view lytics-team-mcp
 
 # Test installation
-npx @vedant-contentstack/lytics-mcp --help
+npx lytics-team-mcp --help
 ```
 
-## Package Scope
+## Package Name
 
-The package is scoped under `@vedant-contentstack/` which means:
-- ✅ No name conflicts with other packages
-- ✅ Clear ownership
-- ✅ Can be public or private
+The package uses an unscoped name `lytics-team-mcp` which means:
+- ✅ Simple to install and remember
+- ✅ No scope prefix needed
+- ⚠️ Must be globally unique on npm
+- ✅ Public by default
 
-If you want an unscoped name (e.g., `lytics-mcp`), you'll need to:
-1. Check if it's available: `npm search lytics-mcp`
-2. Remove the `@vedant-contentstack/` prefix from package.json name
-3. Ensure uniqueness on npm
+**Before publishing**, verify the name isn't taken:
+```bash
+npm search lytics-team-mcp
+```
 
 ## What Gets Published
 
@@ -88,7 +99,7 @@ Based on the `files` field in package.json:
 3. Add badges to README (optional):
 
 ```markdown
-[![npm version](https://badge.fury.io/js/%40vedant-contentstack%2Flytics-mcp.svg)](https://www.npmjs.com/package/@vedant-contentstack/lytics-mcp)
+[![npm version](https://badge.fury.io/js/lytics-team-mcp.svg)](https://www.npmjs.com/package/lytics-team-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 ```
 
@@ -146,10 +157,10 @@ Add your npm token to GitHub repository secrets:
 
 ```bash
 # Unpublish a specific version (within 72 hours)
-npm unpublish @vedant-contentstack/lytics-mcp@1.0.0
+npm unpublish lytics-team-mcp@1.0.0
 
 # Deprecate instead (better option)
-npm deprecate @vedant-contentstack/lytics-mcp@1.0.0 "Use version 1.0.1 instead"
+npm deprecate lytics-team-mcp@1.0.0 "Use version 1.0.1 instead"
 ```
 
 ⚠️ **Warning**: Unpublishing is permanent and can break projects depending on your package. Use with caution!
@@ -159,13 +170,14 @@ npm deprecate @vedant-contentstack/lytics-mcp@1.0.0 "Use version 1.0.1 instead"
 ### "You do not have permission to publish"
 
 - Ensure you're logged in: `npm whoami`
-- Check package name isn't taken: `npm search @vedant-contentstack/lytics-mcp`
-- For scoped packages, ensure `--access public` is set
+- Check package name isn't taken: `npm search lytics-team-mcp`
+- Verify you have npm account: `npm login`
 
 ### "Package name too similar to existing package"
 
 - npm prevents names too similar to existing packages
 - Change the package name in package.json
+- Try variations like: `team-lytics-mcp`, `lytics-knowledge-mcp`
 - Or use a scoped name: `@yourscope/lytics-mcp`
 
 ### Build Failures
@@ -175,6 +187,18 @@ npm deprecate @vedant-contentstack/lytics-mcp@1.0.0 "Use version 1.0.1 instead"
 rm -rf dist/ node_modules/
 npm install
 npm run build
+```
+
+### "Package name not available"
+
+```bash
+# Check availability first
+npm search lytics-team-mcp
+
+# If taken, try variations:
+# - lytics-team-knowledge
+# - team-lytics-mcp
+# - lytics-mcp-server
 ```
 
 ## Best Practices
